@@ -1,0 +1,416 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(ggtree)
+library(RColorBrewer)
+library(phytools)
+library(cowplot)
+```
+
+# DATA FILES READ IN
+```{r}
+dnaA_start_coords.gfs <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/dnaA_start_coords.gfs")
+fig5bdata <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/fig5bdata")
+fourth_run_fst_table_intermediate_categories <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/fourth_run_fst_table_intermediate_categories")
+genomad <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/genomad")
+set7954.gfd <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/set7954-gfd")
+set740HI.gfd <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/set740HI-gfd")
+set740.gfd <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/set740-gfd")
+set7954_ric <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/set7954_ric")
+set740HI.ric <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/set740HI-ric")
+set740.ric <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/set740-ric")
+pat_vs_hamm <- read.delim("~/GitHub/staphopiaV2_pangenome/timsfigsData/pat_vs_hamm")
+```
+
+
+# OTHER FILES
+```{r}
+mypal <- brewer.pal(3,"Dark2")
+n315_coordinates = seq(from=5000,to=2825000,length.out=281)
+n315_feat_sta <- as.numeric(c("87119","329380","436162","917453","1132235","1575042","1854608","2049591","2056679"))
+n315_feat_end <- as.numeric(c("34153","346712","466813","962005","1135775","1529123","1881615","2005321","2072358"))
+n315_feat_name <- c("SCCmec","type VII","vSaalpha","phiSa1","vSagamma","phiSa2","vSabeta","phiSa3","vSa4")
+n315_code <- c("")
+```
+
+
+# Figure 5
+```{r}
+fig5A <- ggplot(data=set740.gfd,aes(x=number_genomes,y=num_strains,color=Category)) + geom_point()  + ylab("Strains") + xlab("Genomes") + 
+  scale_color_manual(values=mypal)+
+theme_bw(base_family="Arial")+
+theme(legend.text=element_text(size=8)) +
+theme(legend.title=element_text(size=8)) +
+theme(axis.text.y=element_text(size=14,color="black"))+
+theme(axis.text.x=element_text(size=14,color="black"))+
+theme(axis.title.y=element_text(size=14,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=14,face="bold",color="black"))+
+  stat_function(fun=function(x){x/20},color="black",size=1.5) +
+  stat_function(fun=function(x){37*(1-exp(-x/37))},color="black",size=1.5,lty=4) +
+  theme(axis.text.x=element_text(color="black",size=14,angle=45,hjust=1))
+fig5A
+```
+
+```{r warning=False}
+fig5B <- ggplot(filter(set740.ric,!is.na(MinimumNumberChangesOnTree)),aes(x=number_genomes,y=MinimumNumberChangesOnTree, color = Category)) +
+  geom_point() +
+  ylab("Min. changes on tree") +
+  xlab("Genomes")+
+  scale_color_manual(values=mypal)+
+theme_bw(base_family="Arial")+
+#theme(legend.position="none") +
+theme(axis.text.y=element_text(size=14,color="black"))+
+theme(axis.text.x=element_text(size=14,color="black"))+
+theme(axis.title.y=element_text(size=14,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=14,face="bold",color="black")) +
+  theme(axis.text.x=element_text(color="black",size=14,angle=45,hjust=1))
+fig5B
+```
+
+```{r warning=False}
+grid1 <- plot_grid(fig5A + theme(legend.position="none"),
+                   fig5B + theme(legend.position="none"), 
+                   labels = c("A","B"),
+                   label_size = 12)
+leg01 <- get_legend(fig5A)
+plot_grid(grid1, leg01, rel_widths = c(5, 1))
+```
+
+
+# Figure 7
+
+```{r}
+HFSTI_tab <- dnaA_start_coords.gfs %>%
+  filter(species_category == "Hi-Fst") %>%
+  arrange(start) %>%
+  .$start %>%
+ cut(.,breaks = seq(from=1,to=2820000,by=10000)) %>%
+  table()
+
+Rare_tab <- dnaA_start_coords.gfs %>%
+  filter(species_category == "Rare") %>%
+  arrange(start) %>%
+  .$start %>%
+  cut(.,breaks = seq(from=1,to=2820000,by=10000)) %>%
+  table()
+
+LFSTI_tab <- dnaA_start_coords.gfs %>%
+  filter(species_category == "Lo-Fst") %>%
+  arrange(start) %>%
+  .$start %>%
+  cut(.,breaks = seq(from=1,to=2820000,by=10000)) %>%
+  table()
+
+HFSTI_props <- as.numeric(HFSTI_tab)/sum(as.numeric(HFSTI_tab))
+LFSTI_props <- as.numeric(LFSTI_tab)/sum(as.numeric(LFSTI_tab))
+Rare_props <- as.numeric(Rare_tab)/sum(as.numeric(Rare_tab))
+
+temp <- data_frame(n315_coordinates,Rare_props,HFSTI_props,LFSTI_props)
+options(scipen=10000)
+fig7A <- ggplot(temp,aes(x=n315_coordinates)) + geom_line(aes(y=HFSTI_props), color=mypal[1]) +
+  geom_line(aes(y=LFSTI_props), color=mypal[2]) +
+  geom_line(aes(y=Rare_props), color=mypal[3]) + 
+  geom_segment(aes(x=n315_feat_sta[1],xend=n315_feat_end[1],y=-0.005,yend=-0.005),  color= "red", size = 3) +
+    annotate("text", x = ((n315_feat_sta[1]+n315_feat_end[1])/2), y = -0.002, label = "I") +
+  geom_segment(aes(x=n315_feat_sta[2],xend=n315_feat_end[2],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[2]+n315_feat_end[2])/2), y = -0.002, label = "II") +
+  geom_segment(aes(x=n315_feat_sta[3],xend=n315_feat_end[3],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[3]+n315_feat_end[3])/2), y = -0.002, label = "III") +
+  geom_segment(aes(x=n315_feat_sta[4],xend=n315_feat_end[4],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[4]+n315_feat_end[4])/2), y = -0.002, label = "IV") +
+  geom_segment(aes(x=n315_feat_sta[5],xend=n315_feat_end[5],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[5]+n315_feat_end[5])/2), y = -0.002, label = "V") +
+  geom_segment(aes(x=n315_feat_sta[6],xend=n315_feat_end[6],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[6]+n315_feat_end[6])/2), y = -0.002, label = "VI") +
+  geom_segment(aes(x=n315_feat_sta[7],xend=n315_feat_end[7],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[7]+n315_feat_end[7])/2), y = -0.002, label = "VII") +
+  geom_segment(aes(x=n315_feat_sta[8],xend=n315_feat_end[8],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+  annotate("text", x = (n315_feat_end[9]), y = -0.002, label = "VIII,IX") +
+  geom_segment(aes(x=n315_feat_sta[9],xend=n315_feat_end[9],y=-0.005,yend=-0.005),  color= "red", size=3 ) +
+  theme_bw(base_family="Arial")+
+  ylab("Proportion") +
+  xlab("Chromosome coordinate") +
+theme(axis.text.y=element_text(size=12,color="black"))+
+theme(axis.text.x=element_text(size=12,color="black"))+
+theme(axis.title.y=element_text(size=16,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=16,face="bold",color="black"))
+fig7A
+```
+
+```{r}
+options(scipen=10000)
+fig7B <- ggplot(fig5bdata,aes(x=n315_coordinates)) + geom_segment(aes(x=n315_coordinates,xend=n315_coordinates,y=0,yend=HFSTI_props_n315), color=mypal[1]) +
+  geom_segment(aes(x=n315_coordinates,xend=n315_coordinates,y=0,yend=LFSTI_props_n315), color=mypal[2]) +
+  geom_segment(aes(x=n315_coordinates,xend=n315_coordinates,y=0,yend=Rare_props_n315), color=mypal[3]) +
+  ylim(-0.015, 0.15) +
+  geom_segment(aes(x=n315_feat_sta[1],xend=n315_feat_end[1],y=-0.01,yend=-0.01),  color= "red", size = 3) +
+    annotate("text", x = ((n315_feat_sta[1]+n315_feat_end[1])/2), y = -0.005, label = "I") +
+  geom_segment(aes(x=n315_feat_sta[2],xend=n315_feat_end[2],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[2]+n315_feat_end[2])/2), y = -0.005, label = "II") +
+  geom_segment(aes(x=n315_feat_sta[3],xend=n315_feat_end[3],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[3]+n315_feat_end[3])/2), y = -0.005, label = "III") +
+  geom_segment(aes(x=n315_feat_sta[4],xend=n315_feat_end[4],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[4]+n315_feat_end[4])/2), y = -0.005, label = "IV") +
+  geom_segment(aes(x=n315_feat_sta[5],xend=n315_feat_end[5],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[5]+n315_feat_end[5])/2), y = -0.005, label = "V") +
+  geom_segment(aes(x=n315_feat_sta[6],xend=n315_feat_end[6],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[6]+n315_feat_end[6])/2), y = -0.005, label = "VI") +
+  geom_segment(aes(x=n315_feat_sta[7],xend=n315_feat_end[7],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+    annotate("text", x = ((n315_feat_sta[7]+n315_feat_end[7])/2), y = -0.005, label = "VII") +
+  geom_segment(aes(x=n315_feat_sta[8],xend=n315_feat_end[8],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+  annotate("text", x = (n315_feat_end[9]), y = -0.005, label = "VIII,IX") +
+  geom_segment(aes(x=n315_feat_sta[9],xend=n315_feat_end[9],y=-0.01,yend=-0.01),  color= "red", size=3 ) +
+  theme_bw(base_family="Arial")+
+  ylab("Proportion") +
+  xlab("Chromosome coordinate") +
+theme(axis.text.y=element_text(size=12,color="black"))+
+theme(axis.text.x=element_text(size=12,color="black"))+
+theme(axis.title.y=element_text(size=16,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=16,face="bold",color="black"))
+fig7B
+```
+```{r warnings=False}
+plot_grid(fig7A, labels = c('A'),ncol = 1, align = "l")
+plot_grid(fig7B, labels = c('B'),ncol = 1, align = "l")
+```
+
+# Figure 8
+
+```{r}
+Fig8 <- ggplot(fourth_run_fst_table_intermediate_categories, aes(x=percent_present,y=fst,color=Category))  +
+  geom_point(size=4, alpha=0.5) +
+  theme_bw(base_family="Arial")+
+  ylab("Fst") +
+  xlab("Percentage present")+
+  geom_hline(yintercept=0.75,linetype=2) +
+theme(axis.text.y=element_text(size=16,color="black"))+
+theme(axis.text.x=element_text(size=16,color="black"))+
+theme(axis.title.y=element_text(size=16,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=16,face="bold",color="black"))+
+  ylab(bquote(bold(F[ST])))
+Fig8
+```
+
+
+# Figure S4
+
+```{r}
+figS4D <- ggplot(pat_vs_hamm,aes(x=patristic,y=hamming_non_core)) + 
+  geom_point(alpha = 0.2) +
+  ylim(0,700) + 
+  ylab("Hamming distance") +
+  xlab("Patristic distance") +
+  theme_bw(base_family="Arial")+
+theme(axis.text.y=element_text(size=10,color="black"))+
+theme(axis.text.x=element_text(size=10,color="black"))+
+theme(axis.title.y=element_text(size=10,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=10,face="bold",color="black")) +
+  stat_smooth(method=lm,col = "red",level=0.95,se=TRUE)+
+  annotate("text",x=0.005,y=575,label="y=262.68+3755x",col="red")
+figS4D
+```
+```{r}
+# this one not used in the final plot
+fig04 <- ggplot(pat_vs_hamm,aes(x=patristic,y=hamming_intermediate)) + 
+  geom_point(alpha = 0.2) +
+  ylim(0,700) + 
+  ylab("Hamming distance") +
+  xlab("Patristic distance") +
+  theme_bw(base_family="Arial")+
+theme(axis.text.y=element_text(size=10,color="black"))+
+theme(axis.text.x=element_text(size=10,color="black"))+
+theme(axis.title.y=element_text(size=10,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=10,face="bold",color="black"))+
+  stat_smooth(method=lm,col = "red",level=0.95,se=TRUE)
+fig04
+```
+```{r}
+figS4A <- ggplot(pat_vs_hamm,aes(x=patristic,y=hamming_rare)) + 
+  geom_point(alpha = 0.2) +
+  ylim(0,400) + 
+  ylab("Hamming distance") +
+  xlab("Patristic distance") +
+  theme_bw(base_family="Arial")+
+theme(axis.text.y=element_text(size=10,color="black"))+
+theme(axis.text.x=element_text(size=10,color="black"))+
+theme(axis.title.y=element_text(size=10,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=10,face="bold",color="black"))+
+  stat_smooth(method=lm,col = "red",level=0.95,se=TRUE) +
+  annotate("text",x=0.005,y=375,label="y=60.38+893.6x",col="red")
+figS4A
+```
+```{r}
+figS4B <- ggplot(pat_vs_hamm,aes(x=patristic,y=hamming_lo_fst)) + 
+  geom_point(alpha = 0.2) +
+  ylim(0,400) + 
+  ylab("Hamming distance") +
+  xlab("Patristic distance") +
+  theme_bw(base_family="Arial")+
+theme(axis.text.y=element_text(size=10,color="black"))+
+theme(axis.text.x=element_text(size=10,color="black"))+
+theme(axis.title.y=element_text(size=10,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=10,face="bold",color="black"))+
+  stat_smooth(method=lm,col = "red",level=0.95,se=TRUE)+
+  annotate("text",x=0.005,y=375,label="y=133.27+695.8x",col="red")
+figS4B
+```
+```{r}
+figS4C <- ggplot(pat_vs_hamm,aes(x=patristic,y=hamming_hi_fst)) + 
+geom_point(alpha = 0.2) +
+  ylim(0,400) + 
+  ylab("Hamming distance") +
+  xlab("Patristic distance") +
+  theme_bw(base_family="Arial")+
+theme(axis.text.y=element_text(size=10,color="black"))+
+theme(axis.text.x=element_text(size=10,color="black"))+
+theme(axis.title.y=element_text(size=10,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=10,face="bold",color="black")) +
+  stat_smooth(method=lm,col = "red",level=0.95,se=TRUE)+
+  annotate("text",x=0.005,y=375,label="y=69.04+1988.6x",col="red")
+figS4C
+```
+
+
+```{r warning=False}
+plot_grid(figS4A,figS4B,figS4C,figS4D, labels = c("A","B","C","D"),label_size = 12)
+```
+
+
+# Figure S5
+
+```{r warning=False}
+genomad_plot1 <- ggplot(genomad,aes(x=chromosome_score,color=factor(species_category))) +
+  geom_boxplot(width=0.5) +
+  theme_bw(base_family="Arial")+
+  theme(axis.text.y=element_text(size=8,color="black"))+
+theme(axis.text.x=element_blank())+
+ theme(axis.ticks.x=element_blank()) +
+theme(axis.title.y=element_text(size=8,face="bold",color="black"))+
+  theme(legend.title= element_blank())+
+coord_flip() 
+
+genomad_plot2 <- ggplot(genomad,aes(x=plasmid_score,color=factor(species_category))) +
+  geom_boxplot(width=0.5) +
+  theme_bw(base_family="Arial")+
+theme(axis.text.y=element_text(size=8,color="black"))+
+theme(axis.text.x=element_blank())+
+ theme(axis.ticks.x=element_blank()) +
+theme(axis.title.y=element_text(size=8,face="bold",color="black"))+
+  theme(legend.title= element_blank())+
+coord_flip()
+
+genomad_plot3 <- ggplot(genomad,aes(x=virus_score,color=factor(species_category))) +
+  geom_boxplot(width=0.5) +
+  theme_bw(base_family="Arial")+
+theme(axis.text.y=element_text(size=8,color="black"))+
+theme(axis.text.x=element_blank())+
+ theme(axis.ticks.x=element_blank()) +
+theme(axis.title.y=element_text(size=8,face="bold",color="black"))+
+  theme(legend.title= element_blank())+
+coord_flip()
+
+FigS5 <- plot_grid(genomad_plot1,genomad_plot2,genomad_plot3, labels = c('A','B','C'),ncol = 1, align = "l")
+FigS5
+```
+
+
+# Figure S6
+
+```{r}
+figS6A <- ggplot(data=set7954.gfd,aes(x=number_genomes,y=num_strains,color=Category)) + geom_point()  + ylab("Strains") + xlab("Genomes") + 
+  scale_color_manual(values=mypal)+
+theme_bw(base_family="Arial")+
+theme(legend.text=element_text(size=8)) +
+theme(legend.title=element_text(size=8)) +
+theme(axis.text.y=element_text(size=14,color="black"))+
+theme(axis.text.x=element_text(size=14,color="black"))+
+theme(axis.title.y=element_text(size=14,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=14,face="bold",color="black"))+
+  theme(axis.text.x=element_text(color="black",size=14,angle=45,hjust=1))
+  #stat_function(fun=function(x){x/20},color="red",lty=4,size=1.5) +
+  #stat_function(fun=function(x){37*(1-exp(-x/37))},color="blue",size=1.5,lty=4) 
+figS6A
+```
+```{r}
+figS6B <- ggplot(filter(set7954_ric,!is.na(MinimumNumberChangesOnTree)),aes(x=number_genomes,y=MinimumNumberChangesOnTree, color = Category)) +
+  geom_point() +
+  ylab("Min. changes on tree") +
+  xlab("Genomes")+
+  scale_color_manual(values=mypal)+
+theme_bw(base_family="Arial")+
+#theme(legend.position="none") +
+theme(axis.text.y=element_text(size=14,color="black"))+
+theme(axis.text.x=element_text(size=14,color="black"))+
+theme(axis.title.y=element_text(size=14,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=14,face="bold",color="black"))+
+  theme(axis.text.x=element_text(color="black",size=14,angle=45,hjust=1))
+figS6B
+```
+
+```{r}
+figS6C <- ggplot(data=set740HI.gfd,aes(x=number_genomes,y=num_strains,color=Category)) + geom_point()  + ylab("Strains") + xlab("Genomes") + 
+  scale_color_manual(values=mypal)+
+theme_bw(base_family="Arial")+
+theme(legend.text=element_text(size=8)) +
+theme(legend.title=element_text(size=8)) +
+theme(axis.text.y=element_text(size=14,color="black"))+
+theme(axis.text.x=element_text(size=14,color="black"))+
+theme(axis.title.y=element_text(size=14,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=14,face="bold",color="black"))+
+  stat_function(fun=function(x){x/20},color="black",size=1.5) +
+  stat_function(fun=function(x){37*(1-exp(-x/37))},color="black",size=1.5,lty=4) +
+  theme(axis.text.x=element_text(color="black",size=14,angle=45,hjust=1))
+figS6C
+```
+
+```{r}
+figS6D <- ggplot(filter(set740HI.ric,!is.na(MinimumNumberChangesOnTree)),aes(x=number_genomes,y=MinimumNumberChangesOnTree, color = Category)) +
+  geom_point() +
+  ylab("Min. changes on tree") +
+  xlab("Genomes")+
+  scale_color_manual(values=mypal)+
+theme_bw(base_family="Arial")+
+#theme(legend.position="none") +
+theme(axis.text.y=element_text(size=14,color="black"))+
+theme(axis.text.x=element_text(size=14,color="black"))+
+theme(axis.title.y=element_text(size=14,face="bold",color="black"))+
+theme(axis.title.x=element_text(size=14,face="bold",color="black"))+
+theme(axis.text.x=element_text(color="black",size=14,angle=45,hjust=1))
+figS6D
+```
+
+```{r warning=False}
+grid1 <- plot_grid(figS6A + theme(legend.position="none"),
+                   figS6B + theme(legend.position="none"), 
+                   labels = c("A","B"),
+                   label_size = 12)
+leg01 <- get_legend(figS6A)
+plot_grid(grid1, leg01, rel_widths = c(6, 1))
+```
+```{r warning=False}
+grid1 <- plot_grid(figS6C + theme(legend.position="none"),
+                   figS6D + theme(legend.position="none"), 
+                   labels = c("C","D"),
+                   label_size = 12)
+leg01 <- get_legend(figS6C)
+plot_grid(grid1, leg01, rel_widths = c(5, 1))
+```
+
+
+# Figure S7
+
+```{r}
+genome_non_core <- dnaA_start_coords.gfs %>%
+  filter(genome %in% c("GCA_000160335","GCA_000013425","GCA_000024585","GCA_014731755","GCA_000012045","GCA_000009645")) %>% #MSSA - CC30, CC8, CC5, MRSA the same
+  # inner_join(.,species_cat, by = c("gene_family" = "species_gf")) %>%
+  filter(species_category != "Core") %>%
+  arrange(desc(genome),start)
+
+FigS7 <- ggplot(data=genome_non_core,aes(genome,2800000)) + geom_bar(stat="identity", fill="grey", width = 1) + coord_flip()+labs(x="", y="genome_coord") + ylim(1,2800000) +  geom_segment(data= genome_non_core, aes(x=genome, xend=genome, y=start, yend=end, color=species_category),size=15, alpha=1) + theme_classic() +theme(legend.position = "top") +theme(axis.ticks.y = element_blank(),axis.line.y = element_blank()) +scale_color_manual(values=mypal)
+FigS7
+```
+
