@@ -972,7 +972,7 @@ Fig6<-plot_grid(plot_grid(sub740_plotA,NULL,sub740_plotB,nrow=1,rel_widths = c(1
 
 ```
 
-![](Figs/Fig6.png)<!-- -->
+<p align="center"><img src=Figs/Fig6.png width=80% height=80%></p>
 
 # FIG S4: Patristic v Hamming
 
@@ -1035,7 +1035,7 @@ theme(axis.title.x=element_text(size=14,face="bold",color="black")) +
 FigS4<-plot_grid(plot_grid(FigS4A,NULL,FigS4B,nrow=1,rel_widths = c(1,0.1,1),labels=c("A","","B"),label_size = 16),NULL,plot_grid(FigS4C,NULL,FigS4D,nrow=1,rel_widths = c(1,0.1,1),labels=c("C","","D"),label_size = 16),nrow=3,ncol=1,rel_heights=c(1,0.05,1))
 ```
 
-![](Figs/FigS4.png)<!-- -->
+<p align="center"><img src=Figs/FigS4.png width=80% height=80%></p>
 
 
 # FIG S5: GeNomad
@@ -1065,7 +1065,7 @@ FigS5<-ggplot(genomad_l,aes(x=species_category,y=genomad_score,color=species_cat
   
 ```
 
-![](Figs/FigS5.png)<!-- -->
+<p align="center"><img src=Figs/FigS5.png width=35% height=35%></p>
 
 # FIG 7: Distribution of genes on chromosome
 
@@ -1159,7 +1159,7 @@ theme(axis.title.x=element_text(size=16,face="bold",color="black"))
 Fig7<-plot_grid(Fig7A, NULL, Fig7B, labels = c('A',"","B"),ncol = 1, align = "l",rel_heights = c(1,0.1,1))
 ```
 
-![](Figs/Fig7.png)<!-- -->
+<p align="center"><img src=Figs/Fig7.png width=70% height=70%></p>
 
 # FIG S6: Gene prevalence, number of strains and homoplasy
 
@@ -1252,7 +1252,7 @@ FigS7<-ggplot(data=genome_non_core,aes(genome,2800000)) + geom_bar(stat="identit
 
 ```
 
-![](Figs/FigS7.png)<!-- -->
+<p align="center"><img src=Figs/FigS7.png width=70% height=70%></p>
 
 # FIG 8: Function vs F(ST)
 
@@ -1281,7 +1281,7 @@ Fig8<-ggplot(fourth_run_fst_table_intermediate_categories, aes(x=percent_present
 
 ```
 
-![](Figs/Fig8.png)<!-- -->
+<p align="center"><img src=Figs/Fig8.png width=70% height=70%></p>
 
 # Fig S8: ANI v SNPs
 
@@ -1318,5 +1318,5 @@ FigS8<-ggplot(snps,aes(x=snps,y=ANI_inv,color=strain_concordance))+
   theme(legend.position="none")
 
 ```
-![](Figs/FigS8.png)<!-- -->
+<p align="center"><img src=Figs/FigS8.png width=70% height=70%></p>
 
