@@ -18,7 +18,7 @@ zenodo url: https://zenodo.org/records/10471309
 # Download data from zenodo
 ```{r}
 
-inborutils::download_zenodo(doi="10.5281/zenodo.10471309", path = "D:/Emory/TR/StaphopiaV2/staphopia_v2_fourth/mSystems submission/Github/Zenodo/", parallel = TRUE, quiet = FALSE)
+inborutils::download_zenodo(doi="10.5281/zenodo.10471309", path = "./", parallel = TRUE, quiet = FALSE)
 
 ```
 
