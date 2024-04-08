@@ -826,11 +826,11 @@ p +
 ![](Figs/Fig4.png)<!-- -->
 
 # SUBSAMPLED 740 SAMPLES PANGENOME
-```{text 740 SAMPLES PANGENOME}
+
 
 The following section comprises data from the 740 set (Refer to manuscript for more details) . The figures involve many intermediate datasets and not all intermediate datasets are available on the zenodo. However, the necessary files can be found on this github in the folder '740_intermediates' .
 
-```
+
 
 ## Import datasets
 ```{r Import datasets}
