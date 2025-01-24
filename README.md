@@ -10,7 +10,7 @@ SCAPE - StaphyloCoccus Aureus Pangenome Exploration
 
 The following R markdown contains the code for generating figures from the manuscript "Average Nucleotide Identity based Staphylococcus aureus strain grouping allows identification of strain-specific genes in the pangenome" 
 
-doi: https://doi.org/10.1101/2024.01.29.577756
+doi: [https://doi.org/10.1101/2024.01.29.577756](https://doi.org/10.1128/msystems.00143-24)
 
 zenodo url: https://zenodo.org/records/10471309
 
